@@ -147,7 +147,8 @@ movies/{tmdbId}.json   — movie snapshot: title, poster, year, runtime, overvie
 Until there's a Mac for native iOS builds, iPhone uses the web build installed via Safari → Add to Home Screen, hosted on Vercel from the GitHub repo (`ShYmaNo16Hz/popcorn-journal`, push to `main` deploys).
 
 - **TMDB proxy**: `api/tmdb.ts` (Vercel Edge Function) whitelists the app's endpoints/params and adds the token server-side from the Vercel env var `TMDB_PROXY_TOKEN`. Never set `TMDB_API_READ_ACCESS_TOKEN` on Vercel — `envPrefix` would bake it into the client bundle. `tmdb.ts` calls TMDB directly when the build has a token (native, local dev) and `/api/tmdb` otherwise.
-- **PWA**: `vite-plugin-pwa` (manifest, precache, auto-update, TMDB posters cached 90 days). The service worker is registered only when `!Capacitor.isNativePlatform()`. iOS needs `public/apple-touch-icon.png` (opaque) for the home-screen icon; re-adding the icon is required after changing it. Service workers need HTTPS (not available on the LAN preview).
+- **PWA**: `vite-plugin-pwa` (manifest, precache, TMDB posters cached 90 days). The service worker is registered only when `!Capacitor.isNativePlatform()`. iOS needs `public/apple-touch-icon.png` (opaque) for the home-screen icon; re-adding the icon is required after changing it. Service workers need HTTPS (not available on the LAN preview).
+- **Updates** (`src/services/pwa.ts`, `registerType: 'prompt'`): check on startup, on every return from background and hourly; apply (flush storage, then reload) only within 10 s of opening/resuming — never mid-use. iOS only resumes a backgrounded PWA, so the resume check is what picks up deploys.
 - No local notifications on the web; export uses Web Share (`navigator.share` with a file) when available, else a download.
 - `vercel.json`: SPA rewrite to `index.html` (except `/api/`), `sw.js` not cached.
 

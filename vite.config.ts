@@ -17,7 +17,8 @@ export default defineConfig({
     // Web install (Add to Home Screen) + offline. The service worker is
     // registered from main.ts on the web only, never inside the native apps.
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt': src/services/pwa.ts decides when to apply an update
+      registerType: 'prompt',
       injectRegister: null,
       includeAssets: ['favicon.png', 'apple-touch-icon.png'],
       manifest: {
