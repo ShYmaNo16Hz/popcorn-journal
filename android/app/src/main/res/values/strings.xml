@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Popcorn Journal</string>
+    <string name="title_activity_main">Popcorn Journal</string>
+    <string name="package_name">com.popcornjournal.app</string>
+    <string name="custom_url_scheme">com.popcornjournal.app</string>
+</resources>

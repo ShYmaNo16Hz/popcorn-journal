@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Auto Backup, Android 6–11. Only user data (Directory.Data/user/) is backed up;
+     the TMDB metadata cache (Directory.Data/cache/) is re-downloadable and excluded. -->
+<full-backup-content>
+    <include domain="file" path="user/" />
+</full-backup-content>

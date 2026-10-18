@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Auto Backup / device transfer, Android 12+. Same rules as backup_rules.xml:
+     only Directory.Data/user/ is included, the metadata cache is excluded. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="file" path="user/" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="file" path="user/" />
+    </device-transfer>
+</data-extraction-rules>
