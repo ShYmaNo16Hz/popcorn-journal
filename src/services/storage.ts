@@ -169,7 +169,7 @@ export function createStorage(backend: StorageBackend, debounceMs = 1000) {
 
 /**
  * Writes a file for the user to share or save. Native: a temp file in the
- * cache directory, returning its URI. Web: downloads it and returns null.
+ * cache directory, returning its URI. Web: shares or downloads it, returns null.
  */
 export async function writeExportFile(
   name: string,
@@ -185,9 +185,18 @@ export async function writeExportFile(
     })
     return uri
   }
-  const url = URL.createObjectURL(
-    new Blob([text], { type: 'application/json' }),
-  )
+  // Web: the system share sheet where available (iOS Safari over HTTPS), else a download
+  const file = new File([text], name, { type: 'application/json' })
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: name })
+    } catch (error) {
+      // Dismissing the share sheet rejects with AbortError; that's not a failure
+      if ((error as DOMException).name !== 'AbortError') throw error
+    }
+    return null
+  }
+  const url = URL.createObjectURL(file)
   const link = document.createElement('a')
   link.href = url
   link.download = name
@@ -258,9 +267,88 @@ const localStorageBackend: StorageBackend = {
   },
 }
 
+// Web (PWA on iPhone): IndexedDB, since localStorage caps at ~5 MB in Safari and
+// a full quota would start failing user-data writes. One object store keyed by path.
+const IDB_NAME = 'popcorn-journal'
+const IDB_STORE = 'files'
+
+function request<T>(req: IDBRequest<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    req.onsuccess = () => resolve(req.result)
+    req.onerror = () => reject(req.error)
+  })
+}
+
+function openIdb(): Promise<IDBDatabase> {
+  const open = indexedDB.open(IDB_NAME, 1)
+  open.onupgradeneeded = () => open.result.createObjectStore(IDB_STORE)
+  return request(open)
+}
+
+/** Moves data saved by earlier versions (localStorage backend) into IndexedDB once. */
+async function migrateFromLocalStorage(db: IDBDatabase): Promise<IDBDatabase> {
+  const keys = Object.keys(localStorage).filter((k) =>
+    k.startsWith(LOCAL_PREFIX),
+  )
+  if (keys.length === 0) return db
+  const tx = db.transaction(IDB_STORE, 'readwrite')
+  const store = tx.objectStore(IDB_STORE)
+  for (const key of keys) {
+    const path = key.slice(LOCAL_PREFIX.length)
+    const text = localStorage.getItem(key)
+    // Never overwrite something already in IndexedDB
+    if (text !== null && (await request(store.getKey(path))) === undefined) {
+      store.put(text, path)
+    }
+  }
+  await new Promise<void>((resolve, reject) => {
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+  for (const key of keys) localStorage.removeItem(key)
+  return db
+}
+
+function createIdbBackend(): StorageBackend {
+  const ready = openIdb().then(migrateFromLocalStorage)
+  const store = async (mode: IDBTransactionMode) =>
+    (await ready).transaction(IDB_STORE, mode).objectStore(IDB_STORE)
+  return {
+    async read(path) {
+      const text = await request((await store('readonly')).get(path))
+      return typeof text === 'string' ? text : null
+    },
+    async write(path, text) {
+      await request((await store('readwrite')).put(text, path))
+    },
+    // One transaction: the rename is atomic
+    async rename(from, to) {
+      const files = await store('readwrite')
+      const text = await request(files.get(from))
+      if (typeof text !== 'string') throw new Error(`${from} does not exist`)
+      files.put(text, to)
+      await request(files.delete(from))
+    },
+    async remove(path) {
+      await request((await store('readwrite')).delete(path))
+    },
+  }
+}
+
+function webBackend(): StorageBackend {
+  return typeof indexedDB === 'undefined'
+    ? localStorageBackend
+    : createIdbBackend()
+}
+
 export const storage = createStorage(
-  Capacitor.isNativePlatform() ? nativeBackend : localStorageBackend,
+  Capacitor.isNativePlatform() ? nativeBackend : webBackend(),
 )
+
+// Ask the browser not to evict our data under storage pressure (web only)
+if (!Capacitor.isNativePlatform() && typeof navigator !== 'undefined') {
+  navigator.storage?.persist?.().catch(() => {})
+}
 
 // Don't lose a pending debounced write when the app is backgrounded or closed
 if (typeof document !== 'undefined') {

@@ -140,7 +140,16 @@ movies/{tmdbId}.json   — movie snapshot: title, poster, year, runtime, overvie
 - Episode keys always use `SxxEyy`, zero-padded to at least 2 digits (`S01E100` is valid). Never sort them as strings; parse to numbers.
 - Unticking never deletes a key — it writes a tombstone (`at: null` + `updatedAt`) so sync merges work.
 - Removing a title from the library never deletes its key either: it sets `removedAt` (= `updatedAt`); re-adding clears it. Watch history is kept. Read entries via `library.seriesEntry/movieEntry` or `library.series/movies`, which hide removed ones.
-- On web (dev in browser) fall back to `localStorage` behind the same interface.
+- On web (browser dev and the PWA) the backend is IndexedDB (one object store keyed by path; `localStorage` only if IndexedDB is missing), behind the same interface. Data saved by older versions in `localStorage` is migrated once on startup.
+
+## Web / PWA (iPhone without a Mac)
+
+Until there's a Mac for native iOS builds, iPhone uses the web build installed via Safari → Add to Home Screen, hosted on Vercel from the GitHub repo (`ShYmaNo16Hz/popcorn-journal`, push to `main` deploys).
+
+- **TMDB proxy**: `api/tmdb.ts` (Vercel Edge Function) whitelists the app's endpoints/params and adds the token server-side from the Vercel env var `TMDB_PROXY_TOKEN`. Never set `TMDB_API_READ_ACCESS_TOKEN` on Vercel — `envPrefix` would bake it into the client bundle. `tmdb.ts` calls TMDB directly when the build has a token (native, local dev) and `/api/tmdb` otherwise.
+- **PWA**: `vite-plugin-pwa` (manifest, precache, auto-update, TMDB posters cached 90 days). The service worker is registered only when `!Capacitor.isNativePlatform()`. iOS needs `public/apple-touch-icon.png` (opaque) for the home-screen icon; re-adding the icon is required after changing it. Service workers need HTTPS (not available on the LAN preview).
+- No local notifications on the web; export uses Web Share (`navigator.share` with a file) when available, else a download.
+- `vercel.json`: SPA rewrite to `index.html` (except `/api/`), `sw.js` not cached.
 
 ## Sync & backup
 

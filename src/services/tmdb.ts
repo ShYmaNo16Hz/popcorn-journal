@@ -18,6 +18,7 @@ import type {
 
 const BASE_URL = 'https://api.themoviedb.org/3'
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p'
+const PROXY_URL = '/api/tmdb'
 
 export type ImageSize = 'w185' | 'w500'
 
@@ -40,14 +41,17 @@ async function get<T>(
   params: Record<string, string> = {},
   signal?: AbortSignal,
 ): Promise<T> {
+  // With a token in the build (native apps, local dev) call TMDB directly.
+  // The web deploy is built without one and goes through the Vercel proxy
+  // (api/tmdb.ts), which adds the token server-side.
   const token = import.meta.env.TMDB_API_READ_ACCESS_TOKEN
-  if (!token) {
-    throw new Error('TMDB_API_READ_ACCESS_TOKEN is missing from .env.local')
-  }
-
-  const url = `${BASE_URL}${path}?${new URLSearchParams(params)}`
+  const url = token
+    ? `${BASE_URL}${path}?${new URLSearchParams(params)}`
+    : `${PROXY_URL}?${new URLSearchParams({ path, ...params })}`
   const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    headers: token
+      ? { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+      : { Accept: 'application/json' },
     signal,
   })
   if (!response.ok) {

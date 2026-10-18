@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core'
 import { IonicVue } from '@ionic/vue'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
@@ -6,6 +7,7 @@ import router from './router'
 import { useHistoryStore } from './stores/history'
 import { useLibraryStore } from './stores/library'
 import { useRemindersStore } from './stores/reminders'
+import { registerSW } from 'virtual:pwa-register'
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/vue/css/core.css'
@@ -37,3 +39,9 @@ Promise.all([
     .init()
     .catch((error) => console.error(error))
 })
+
+// Offline support + auto-update for the web install; the native apps bundle
+// their files already, a service worker there would only serve stale copies
+if (!Capacitor.isNativePlatform()) {
+  registerSW({ immediate: true })
+}
