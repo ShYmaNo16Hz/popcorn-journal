@@ -22,6 +22,10 @@ const routes: RouteRecordRaw[] = [
       { path: 'movies/:id', component: MovieDetail, props: true },
       { path: 'search/movies/:id', component: MovieDetail, props: true },
       {
+        path: 'settings/about',
+        component: () => import('../views/AboutPage.vue'),
+      },
+      {
         path: 'settings/stats',
         component: () => import('../views/StatsPage.vue'),
       },

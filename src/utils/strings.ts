@@ -121,6 +121,63 @@ export const strings = {
       'Notifications are turned off for Popcorn Journal in system settings.',
     body: (label: string, title: string) => `${label} · ${title} airs today`,
   },
+  // About & help page: a short user guide
+  about: {
+    title: 'About & help',
+    tagline: 'Your personal TV show & movie journal.',
+    sections: {
+      start: {
+        title: 'Getting started',
+        items: [
+          'Open Search, pick Series or Movies, and type a title.',
+          'Tap a result to open it, then “Add to my shows”, “Mark watched” or “Add to watchlist”.',
+        ],
+      },
+      series: {
+        title: 'Tracking shows',
+        items: [
+          'Tap the circle next to an episode to tick it. Tap the episode itself for more: watched up to here, watched again (+1), mark unwatched.',
+          '“Mark season watched” ticks every aired episode of a season at once.',
+          'The Series tab shows “Up next” for every show you’re watching — tick the next episode right from there.',
+          'Episodes that haven’t aired yet are dimmed and show their air date. Specials don’t count towards progress.',
+          'On a show’s page you can change its status and set how many times you’ve watched it.',
+        ],
+      },
+      movies: {
+        title: 'Tracking movies',
+        items: [
+          '“Mark watched” saves today’s date — tap the date to change it.',
+          'Use “Times watched” for rewatches. “Add to watchlist” keeps movies you plan to see.',
+        ],
+      },
+      data: {
+        title: 'Where your data lives',
+        items: [
+          'Everything you track is stored only on this device. There are no accounts and nothing is uploaded.',
+          'Removing a show or movie from your library keeps its watch history — add it again and your progress is back.',
+        ],
+        web: [
+          'Always open the app from its Home Screen icon: it has its own storage, separate from Safari tabs.',
+          'Deleting the Home Screen icon, or clearing Safari’s website data, erases your data. Export a backup first.',
+        ],
+      },
+      backup: {
+        title: 'Backups',
+        items: [
+          'Settings → Export backup saves everything to one file. Save it to Files or iCloud Drive, and do it regularly.',
+          'Settings → Import backup merges a backup into your current data — nothing is deleted. Use it to move to a new phone or between iPhone and Android.',
+        ],
+      },
+      install: {
+        title: 'Install on iPhone',
+        items: [
+          'In Safari, tap Share → Add to Home Screen.',
+          'The app then opens full screen and works offline. Updates install automatically.',
+          'New episode reminders are only available in the native app, not in the Home Screen version.',
+        ],
+      },
+    },
+  },
   settings: {
     stats: 'Your stats',
     backup: 'Backup',
@@ -133,6 +190,7 @@ export const strings = {
     exportFailed: "Couldn't export the backup.",
     importFailed: "Couldn't import this file.",
     about: 'About',
+    aboutHelp: 'About & help',
     version: (version: string) => `Version ${version}`,
     tmdbNotice:
       'This product uses the TMDB API but is not endorsed or certified by TMDB.',

@@ -23,9 +23,7 @@ import {
   statsChartOutline,
 } from 'ionicons/icons'
 import { ref } from 'vue'
-import logoDark from '../assets/logo-dark.png'
-import logoLight from '../assets/logo-light.png'
-import tmdbLogo from '../assets/tmdb-logo.svg'
+import appIcon from '../assets/app-icon.png'
 import { BackupError } from '../services/backup'
 import { useBackupStore } from '../stores/backup'
 import { useRemindersStore } from '../stores/reminders'
@@ -158,22 +156,12 @@ async function onFilePicked(event: Event) {
       />
 
       <ion-list :inset="true">
-        <ion-list-header>{{ strings.settings.about }}</ion-list-header>
-        <ion-item lines="full">
-          <div class="brand">
-            <!-- The transparent logo's black "Journal" disappears on dark backgrounds -->
-            <picture>
-              <source :srcset="logoDark" media="(prefers-color-scheme: dark)" />
-              <img class="logo" :src="logoLight" :alt="strings.appName" />
-            </picture>
-            <p class="version">{{ strings.settings.version(appVersion) }}</p>
-          </div>
-        </ion-item>
-        <ion-item>
-          <ion-label class="ion-text-wrap">
-            <img class="tmdb-logo" :src="tmdbLogo" alt="TMDB" />
-            <p>{{ strings.settings.tmdbNotice }}</p>
-          </ion-label>
+        <ion-item router-link="/tabs/settings/about" :detail="true">
+          <img slot="start" class="app-icon" :src="appIcon" alt="" />
+          <ion-label>{{ strings.settings.aboutHelp }}</ion-label>
+          <ion-note slot="end">{{
+            strings.settings.version(appVersion)
+          }}</ion-note>
         </ion-item>
       </ion-list>
     </ion-content>
@@ -181,28 +169,10 @@ async function onFilePicked(event: Event) {
 </template>
 
 <style scoped>
-.brand {
-  width: 100%;
-  padding: 16px 0 12px;
-  text-align: center;
-}
-
-.logo {
-  width: 160px;
-  height: 160px;
-  border-radius: 24px;
-}
-
-.version {
-  margin: 8px 0 0;
-  font-size: 14px;
-  color: var(--ion-color-medium);
-}
-
-.tmdb-logo {
-  display: block;
-  height: 14px;
-  margin: 4px 0 10px;
+.app-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
 }
 
 .footer {
