@@ -92,6 +92,12 @@ const count = (episode: Episode) =>
   watchCount(history.episodeEntry(tmdbId.value, episode))
 const stoppedAt = (episode: Episode) =>
   history.episodeEntry(tmdbId.value, episode)?.stoppedAt
+// When it was watched; for a partly watched episode, when the position was saved
+const watchedAt = (episode: Episode) => {
+  const entry = history.episodeEntry(tmdbId.value, episode)
+  if (!entry) return null
+  return entry.at ?? (entry.stoppedAt ? entry.updatedAt : null)
+}
 
 const progress = computed(() =>
   series.value
@@ -394,6 +400,7 @@ async function onRemove() {
                   :count="count(episode)"
                   :aired="isAired(episode, today)"
                   :stopped-at="stoppedAt(episode)"
+                  :watched-at="watchedAt(episode)"
                   @toggle="setEpisodes([episode], $event)"
                   @more="openEpisodeActions(episode)"
                 />

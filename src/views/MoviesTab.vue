@@ -16,7 +16,7 @@ import MediaRow from '../components/MediaRow.vue'
 import { useHistoryStore, watchCount } from '../stores/history'
 import { useLibraryStore } from '../stores/library'
 import { useMetadataStore } from '../stores/metadata'
-import { formatDate, isoToLocalDate, stoppedAtLabel } from '../utils/date'
+import { formatIsoDate, stoppedAtLabel } from '../utils/date'
 import { strings } from '../utils/strings'
 
 const library = useLibraryStore()
@@ -65,8 +65,16 @@ const watched = computed(() =>
 )
 
 function watchedSubtitle(at: string | null | undefined, count: number) {
-  const date = at ? formatDate(isoToLocalDate(at)) : ''
-  return strings.movies.watchedSubtitle(date, count)
+  return at ? strings.movies.watchedSubtitle(formatIsoDate(at), count) : ''
+}
+
+// `Partly watched on: 20 Oct · Stopped at 45m of 2h`
+function inProgressNote(row: (typeof inProgress.value)[number]) {
+  const stopped = stoppedAtLabel(row.watched?.stoppedAt ?? 0, row.movie.runtime)
+  const at = row.watched?.updatedAt
+  return at
+    ? `${strings.partial.partlyWatchedOn(formatIsoDate(at))} · ${stopped}`
+    : stopped
 }
 
 function open(id: string) {
@@ -101,7 +109,7 @@ function open(id: string) {
           :title="row.movie.title"
           :poster-path="row.movie.posterPath"
           :subtitle="row.movie.year ? String(row.movie.year) : undefined"
-          :note="stoppedAtLabel(row.watched?.stoppedAt ?? 0, row.movie.runtime)"
+          :note="inProgressNote(row)"
           button
           @open="open(row.id)"
         />

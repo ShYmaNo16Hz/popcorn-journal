@@ -3,7 +3,7 @@ import { IonBadge, IonButton, IonIcon, IonItem, IonLabel } from '@ionic/vue'
 import { checkmarkCircle, ellipseOutline } from 'ionicons/icons'
 import { computed } from 'vue'
 import type { Episode } from '../types/media'
-import { formatDate, stoppedAtLabel } from '../utils/date'
+import { formatDate, formatIsoDate, stoppedAtLabel } from '../utils/date'
 import { strings } from '../utils/strings'
 
 const props = defineProps<{
@@ -11,6 +11,7 @@ const props = defineProps<{
   count: number // times watched; 0 = unwatched
   aired: boolean
   stoppedAt?: number // minutes, when partly watched
+  watchedAt?: string | null // ISO: when watched, or when the partial position was saved
 }>()
 
 const emit = defineEmits<{ toggle: [watched: boolean]; more: [] }>()
@@ -19,6 +20,14 @@ const when = computed(() => {
   const date = props.episode.airDate
   if (props.aired) return date ? formatDate(date) : ''
   return `${strings.series.upcoming} · ${date ? formatDate(date) : strings.series.tba}`
+})
+
+const watchedLine = computed(() => {
+  if (!props.watchedAt) return ''
+  const date = formatIsoDate(props.watchedAt)
+  if (props.count > 0)
+    return strings.episodeActions.watchedOn(date, props.count)
+  return props.stoppedAt ? strings.partial.partlyWatchedOn(date) : ''
 })
 </script>
 
@@ -51,6 +60,7 @@ const when = computed(() => {
     <ion-label>
       <h3>{{ episode.number }}. {{ episode.title }}</h3>
       <p>{{ when }}</p>
+      <p v-if="watchedLine" class="watched-on">{{ watchedLine }}</p>
       <p v-if="stoppedAt && count === 0" class="partial">
         {{ stoppedAtLabel(stoppedAt, episode.runtime) }}
       </p>
@@ -66,7 +76,8 @@ const when = computed(() => {
   opacity: 0.55;
 }
 
-.partial {
+.partial,
+.watched-on {
   color: var(--ion-color-primary);
 }
 

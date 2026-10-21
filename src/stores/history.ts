@@ -45,6 +45,7 @@ export const useHistoryStore = defineStore('history', () => {
 
   // Never deletes keys: unwatching writes a tombstone so sync merges propagate it.
   // Ticking clears a partial `stoppedAt`; unticking an unwatched entry keeps it.
+  // A rewatch (higher count) moves `at` to now; lowering the count keeps it.
   function writeEntry(
     entries: Record<string, HistoryEntry>,
     key: string,
@@ -60,7 +61,7 @@ export const useHistoryStore = defineStore('history', () => {
       value === 0
         ? { at: null, updatedAt }
         : {
-            at: current?.at ?? at,
+            at: value > watchCount(current) ? at : (current?.at ?? at),
             updatedAt,
             ...(value > 1 ? { count: value } : {}),
           }

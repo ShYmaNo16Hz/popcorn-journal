@@ -25,6 +25,11 @@ export function isoToLocalDate(iso: string): string {
   return localDate(new Date(iso))
 }
 
+/** ISO timestamp → its local calendar date formatted, e.g. `25 Oct`. */
+export function formatIsoDate(iso: string, now: Date = new Date()): string {
+  return formatDate(isoToLocalDate(iso), now)
+}
+
 /**
  * A picked calendar date → ISO timestamp. Today keeps the current time;
  * past dates use local noon so the date doesn't shift across time zones.

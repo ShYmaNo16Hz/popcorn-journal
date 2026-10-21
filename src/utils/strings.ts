@@ -69,6 +69,8 @@ export const strings = {
     removeRewatch: 'Remove a rewatch (−1)',
     cancel: 'Cancel',
     rewatches: (count: number) => `×${count}`,
+    watchedOn: (date: string, count = 1) =>
+      count > 1 ? `Rewatched on: ${date}` : `Watched on: ${date}`,
   },
   partial: {
     set: 'Watched partly…',
@@ -77,6 +79,7 @@ export const strings = {
     inProgress: 'In progress',
     stoppedAt: (at: string, runtime: string | null) =>
       runtime ? `Stopped at ${at} of ${runtime}` : `Stopped at ${at}`,
+    partlyWatchedOn: (date: string) => `Partly watched on: ${date}`,
     promptHeader: 'Where did you stop?',
     promptRuntime: (runtime: string) => `Runtime: ${runtime}`,
     placeholder: 'Minutes, e.g. 45 or 1:30',
@@ -94,7 +97,7 @@ export const strings = {
     watchedOn: 'Watched on',
     watchedTimes: 'Times watched',
     watchedSubtitle: (date: string, count: number) =>
-      count > 1 ? `${date} · ×${count}` : date,
+      count > 1 ? `Rewatched on: ${date} · ×${count}` : `Watched on: ${date}`,
     loadError: "Couldn't load this movie. Check your connection.",
     retry: 'Try again',
     done: 'Done',

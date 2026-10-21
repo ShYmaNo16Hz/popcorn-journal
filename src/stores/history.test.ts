@@ -78,9 +78,14 @@ describe('history store', () => {
     history.setMovieWatched(866398, '2026-10-10T22:00:00.000Z')
     expect(library.library.movies['866398']?.status).toBe('watched')
 
+    // A rewatch moves `at` to now; lowering the count keeps it
+    history.setMovieWatchCount(866398, 3)
+    const rewatchedAt = history.movieEntry(866398)?.at
+    expect(rewatchedAt).not.toBe('2026-10-10T22:00:00.000Z')
+    expect(history.movieEntry(866398)?.count).toBe(3)
     history.setMovieWatchCount(866398, 2)
     expect(history.movieEntry(866398)).toMatchObject({
-      at: '2026-10-10T22:00:00.000Z',
+      at: rewatchedAt,
       count: 2,
     })
 
