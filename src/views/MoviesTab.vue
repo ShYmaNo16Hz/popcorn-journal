@@ -16,7 +16,7 @@ import MediaRow from '../components/MediaRow.vue'
 import { useHistoryStore, watchCount } from '../stores/history'
 import { useLibraryStore } from '../stores/library'
 import { useMetadataStore } from '../stores/metadata'
-import { formatDate, isoToLocalDate } from '../utils/date'
+import { formatDate, isoToLocalDate, stoppedAtLabel } from '../utils/date'
 import { strings } from '../utils/strings'
 
 const library = useLibraryStore()
@@ -41,10 +41,19 @@ const rows = computed(() =>
   }),
 )
 
+// Partly watched, most recently updated first
+const inProgress = computed(() =>
+  rows.value
+    .filter((row) => row.count === 0 && row.watched?.stoppedAt)
+    .sort((a, b) =>
+      (b.watched?.updatedAt ?? '').localeCompare(a.watched?.updatedAt ?? ''),
+    ),
+)
+
 // Most recently added first
 const watchlist = computed(() =>
   rows.value
-    .filter((row) => row.count === 0)
+    .filter((row) => row.count === 0 && !row.watched?.stoppedAt)
     .sort((a, b) => b.entry.addedAt.localeCompare(a.entry.addedAt)),
 )
 
@@ -82,6 +91,21 @@ function open(id: string) {
       <div v-if="rows.length === 0" class="state">
         <ion-text color="medium">{{ strings.movies.empty }}</ion-text>
       </div>
+
+      <ion-list v-if="inProgress.length > 0">
+        <ion-list-header>{{ strings.partial.inProgress }}</ion-list-header>
+        <MediaRow
+          v-for="row in inProgress"
+          :key="row.id"
+          type="movie"
+          :title="row.movie.title"
+          :poster-path="row.movie.posterPath"
+          :subtitle="row.movie.year ? String(row.movie.year) : undefined"
+          :note="stoppedAtLabel(row.watched?.stoppedAt ?? 0, row.movie.runtime)"
+          button
+          @open="open(row.id)"
+        />
+      </ion-list>
 
       <ion-list v-if="watchlist.length > 0">
         <ion-list-header>{{ strings.movies.watchlist }}</ion-list-header>

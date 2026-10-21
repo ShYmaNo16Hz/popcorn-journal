@@ -1,5 +1,6 @@
 // Calendar dates (`YYYY-MM-DD`, as TMDB air dates) are compared as strings in the
 // user's local time zone. Formatting for display lives here too.
+import { strings } from './strings'
 
 /** Today's local date as `YYYY-MM-DD`. */
 export function localDate(now: Date = new Date()): string {
@@ -34,9 +35,39 @@ export function localDateToIso(date: string, now: Date = new Date()): string {
   return new Date(year!, month! - 1, day!, 12).toISOString()
 }
 
-/** 106 → `1h 46m`. */
+/** 106 → `1h 46m`, 120 → `2h` (`parseMinutes` reads it back). */
 export function formatRuntime(minutes: number): string {
   const h = Math.floor(minutes / 60)
   const m = minutes % 60
-  return h ? `${h}h ${m}m` : `${m}m`
+  if (!h) return `${m}m`
+  return m ? `${h}h ${m}m` : `${h}h`
+}
+
+/**
+ * User-typed position → minutes: `45`, `45m`, `1:30`, `1h`, `1h30`, `1h 30m`.
+ * Null if invalid or 0; `1:5` is rejected (ambiguous), `1h 5m` is fine.
+ */
+export function parseMinutes(input: string): number | null {
+  const text = input.trim().toLowerCase()
+  const plain = /^(\d+)\s*(?:m|min)?$/.exec(text)
+  const clock =
+    /^(\d+):(\d{2})$/.exec(text) ??
+    /^(\d+)\s*h\s*(?:(\d{1,2})\s*(?:m|min)?)?$/.exec(text)
+  let minutes: number | null = null
+  if (plain) minutes = Number(plain[1])
+  else if (clock && Number(clock[2] ?? 0) < 60) {
+    minutes = Number(clock[1]) * 60 + Number(clock[2] ?? 0)
+  }
+  return minutes ? minutes : null
+}
+
+/** `Stopped at 45m of 2h` */
+export function stoppedAtLabel(
+  minutes: number,
+  runtime: number | null,
+): string {
+  return strings.partial.stoppedAt(
+    formatRuntime(minutes),
+    runtime ? formatRuntime(runtime) : null,
+  )
 }

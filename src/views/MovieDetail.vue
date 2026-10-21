@@ -24,12 +24,14 @@ import { imageUrl } from '../services/tmdb'
 import { useHistoryStore, watchCount } from '../stores/history'
 import { useLibraryStore } from '../stores/library'
 import { useMetadataStore } from '../stores/metadata'
+import { askStoppedAt } from '../utils/askStoppedAt'
 import { confirmRemove } from '../utils/confirmRemove'
 import {
   formatRuntime,
   isoToLocalDate,
   localDate,
   localDateToIso,
+  stoppedAtLabel,
 } from '../utils/date'
 import { strings } from '../utils/strings'
 
@@ -81,6 +83,17 @@ function markWatched() {
   history.setMovieWatched(tmdbId.value, new Date().toISOString())
 }
 
+const stoppedAt = computed(() =>
+  count.value === 0 ? watched.value?.stoppedAt : undefined,
+)
+
+async function editStoppedAt() {
+  const runtime = movie.value?.runtime ?? null
+  const minutes = await askStoppedAt(stoppedAt.value, runtime)
+  if (minutes === null) return
+  history.setMovieStoppedAt(tmdbId.value, minutes, runtime)
+}
+
 function onDateChange(event: DatetimeCustomEvent) {
   const value = event.detail.value
   if (typeof value !== 'string') return
@@ -125,7 +138,10 @@ async function onRemove() {
           <div class="hero-text">
             <h1>{{ movie.title }}</h1>
             <p v-if="meta" class="meta">{{ meta }}</p>
-            <p v-if="!isWatched && entry" class="state-line">
+            <p v-if="!isWatched && stoppedAt" class="state-line">
+              {{ stoppedAtLabel(stoppedAt, movie.runtime) }}
+            </p>
+            <p v-else-if="!isWatched && entry" class="state-line">
               {{ strings.movies.onWatchlist }}
             </p>
           </div>
@@ -134,6 +150,22 @@ async function onRemove() {
         <div v-if="!isWatched" class="actions ion-padding-horizontal">
           <ion-button expand="block" @click="markWatched">
             {{ strings.movies.markWatched }}
+          </ion-button>
+          <ion-button
+            v-if="count === 0"
+            expand="block"
+            fill="outline"
+            @click="editStoppedAt"
+          >
+            {{ stoppedAt ? strings.partial.change : strings.partial.set }}
+          </ion-button>
+          <ion-button
+            v-if="stoppedAt"
+            expand="block"
+            fill="clear"
+            @click="history.setMovieStoppedAt(tmdbId, null)"
+          >
+            {{ strings.partial.clear }}
           </ion-button>
           <ion-button
             v-if="!entry"

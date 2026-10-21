@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { storage } from '../services/storage'
+import type { Series } from '../types/media'
 import type { History, HistoryEntry } from '../types/userData'
 import { emptyHistory } from '../types/userData'
 import { episodeKey } from '../utils/episodeKey'
-import { watchCount } from '../utils/progress'
+import { isAired, regularEpisodes, watchCount } from '../utils/progress'
 import { useLibraryStore } from './library'
 
 const now = () => new Date().toISOString()
@@ -42,7 +43,8 @@ export const useHistoryStore = defineStore('history', () => {
     save()
   }
 
-  // Never deletes keys: unwatching writes a tombstone so sync merges propagate it
+  // Never deletes keys: unwatching writes a tombstone so sync merges propagate it.
+  // Ticking clears a partial `stoppedAt`; unticking an unwatched entry keeps it.
   function writeEntry(
     entries: Record<string, HistoryEntry>,
     key: string,
@@ -51,7 +53,8 @@ export const useHistoryStore = defineStore('history', () => {
   ): boolean {
     const current = entries[key]
     const value = Math.max(0, Math.floor(count))
-    if (watchCount(current) === value) return false
+    const finishesPartial = value > 0 && !!current?.stoppedAt
+    if (watchCount(current) === value && !finishesPartial) return false
     const updatedAt = now()
     entries[key] =
       value === 0
@@ -118,6 +121,62 @@ export const useHistoryStore = defineStore('history', () => {
     if (count > 0) void useLibraryStore().addSeries(tmdbId)
   }
 
+  // Sets (minutes > 0) or clears (null) where a partly watched title was left off
+  function writeStoppedAt(
+    entries: Record<string, HistoryEntry>,
+    key: string,
+    minutes: number | null,
+  ): boolean {
+    const value = minutes && minutes > 0 ? Math.floor(minutes) : undefined
+    const current = entries[key]
+    if (current?.stoppedAt === value) return false
+    const { stoppedAt: _old, ...rest } = current ?? { at: null }
+    entries[key] = {
+      ...rest,
+      updatedAt: now(),
+      ...(value ? { stoppedAt: value } : {}),
+    }
+    return true
+  }
+
+  /**
+   * Where an unwatched episode was left off (minutes); null clears it.
+   * Reaching the runtime ticks it instead. No-op on watched episodes.
+   */
+  function setEpisodeStoppedAt(
+    tmdbId: number,
+    episode: EpisodeRef,
+    minutes: number | null,
+    runtime: number | null = null,
+  ): void {
+    if (isEpisodeWatched(tmdbId, episode)) return
+    if (minutes && runtime && minutes >= runtime) {
+      setEpisodesWatched(tmdbId, [episode], true)
+      return
+    }
+    const key = episodeKey(episode.season, episode.number)
+    if (!writeStoppedAt(seriesEpisodes(tmdbId), key, minutes)) return
+    save()
+    if (minutes) void useLibraryStore().addSeries(tmdbId)
+  }
+
+  /**
+   * "Already watched": ticks every aired regular episode. A finished
+   * (Ended/Canceled) show you were watching or planning becomes completed.
+   */
+  function markSeriesWatched(tmdbId: number, series: Series, today: string) {
+    const aired = regularEpisodes(series).filter((episode) =>
+      isAired(episode, today),
+    )
+    setEpisodesWatched(tmdbId, aired, true)
+    const library = useLibraryStore()
+    const status = library.seriesEntry(tmdbId)?.status
+    const finished = series.status === 'Ended' || series.status === 'Canceled'
+    if (finished && (status === 'watching' || status === 'planned')) {
+      library.setSeriesStatus(tmdbId, 'completed')
+    }
+  }
+
   function movieEntry(tmdbId: number): HistoryEntry | undefined {
     return history.value.movies[String(tmdbId)]
   }
@@ -142,6 +201,28 @@ export const useHistoryStore = defineStore('history', () => {
     syncMovieStatus(tmdbId, count > 0)
   }
 
+  /**
+   * Where an unwatched movie was left off (minutes); null clears it. Adds it
+   * to the watchlist; reaching the runtime marks it watched. No-op on watched movies.
+   */
+  function setMovieStoppedAt(
+    tmdbId: number,
+    minutes: number | null,
+    runtime: number | null = null,
+  ): void {
+    if (watchCount(movieEntry(tmdbId)) > 0) return
+    if (minutes && runtime && minutes >= runtime) {
+      setMovieWatched(tmdbId, now())
+      return
+    }
+    if (!writeStoppedAt(history.value.movies, String(tmdbId), minutes)) return
+    save()
+    const library = useLibraryStore()
+    if (minutes && !library.movieEntry(tmdbId)) {
+      void library.addMovie(tmdbId, 'planned')
+    }
+  }
+
   function syncMovieStatus(tmdbId: number, watched: boolean): void {
     const library = useLibraryStore()
     const status = watched ? 'watched' : 'planned'
@@ -162,8 +243,11 @@ export const useHistoryStore = defineStore('history', () => {
     isEpisodeWatched,
     setEpisodesWatched,
     setEpisodeWatchCount,
+    setEpisodeStoppedAt,
+    markSeriesWatched,
     movieEntry,
     setMovieWatched,
     setMovieWatchCount,
+    setMovieStoppedAt,
   }
 })

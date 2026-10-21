@@ -103,6 +103,7 @@ Movie status: `watched | planned`
         "count": 2,
       }, // count = rewatches, absent = 1
       "S01E02": { "at": null, "updatedAt": "2026-10-19T10:00:00Z" }, // unticked = tombstone, NOT deleted
+      "S01E03": { "at": null, "updatedAt": "...", "stoppedAt": 15 }, // partly watched: minutes in
     },
   },
   "movies": {
@@ -113,6 +114,7 @@ Movie status: `watched | planned`
 
 - Every write sets `updatedAt` (a user-picked past `at` must still beat an older tombstone in merges).
 - Read counts via `watchCount()` in `stores/history.ts` (tombstone → 0, else `count ?? 1`).
+- `stoppedAt` (optional, minutes) marks an unwatched episode/movie as partly watched ("Watched partly…", prompt in `utils/askStoppedAt.ts`, rules in `stores/history.ts`). Only for unwatched titles; ticking clears it, unticking keeps it; entering a minute ≥ runtime marks it watched. Partly watched movies join the watchlist and show under "In progress".
 - Ticking an episode adds the show to the library; marking a movie watched/unwatched sets its library status.
 - Season 0 = specials: cached and shown, but excluded from progress / "Up next" (`utils/progress.ts`). Episodes airing later (or TBA) are shown dimmed and can't be ticked.
 - Show TMDB series status (Ended / Returning…) via the labels in `strings.seriesStatus`.

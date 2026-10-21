@@ -3,13 +3,14 @@ import { IonBadge, IonButton, IonIcon, IonItem, IonLabel } from '@ionic/vue'
 import { checkmarkCircle, ellipseOutline } from 'ionicons/icons'
 import { computed } from 'vue'
 import type { Episode } from '../types/media'
-import { formatDate } from '../utils/date'
+import { formatDate, stoppedAtLabel } from '../utils/date'
 import { strings } from '../utils/strings'
 
 const props = defineProps<{
   episode: Episode
   count: number // times watched; 0 = unwatched
   aired: boolean
+  stoppedAt?: number // minutes, when partly watched
 }>()
 
 const emit = defineEmits<{ toggle: [watched: boolean]; more: [] }>()
@@ -50,6 +51,9 @@ const when = computed(() => {
     <ion-label>
       <h3>{{ episode.number }}. {{ episode.title }}</h3>
       <p>{{ when }}</p>
+      <p v-if="stoppedAt && count === 0" class="partial">
+        {{ stoppedAtLabel(stoppedAt, episode.runtime) }}
+      </p>
     </ion-label>
     <ion-badge v-if="count > 1" slot="end" color="medium">
       {{ strings.episodeActions.rewatches(count) }}
@@ -60,6 +64,10 @@ const when = computed(() => {
 <style scoped>
 .upcoming {
   opacity: 0.55;
+}
+
+.partial {
+  color: var(--ion-color-primary);
 }
 
 .tick {

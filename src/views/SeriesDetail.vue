@@ -34,6 +34,7 @@ import { useLibraryStore } from '../stores/library'
 import { useMetadataStore } from '../stores/metadata'
 import type { Episode, Season } from '../types/media'
 import type { SeriesStatus } from '../types/userData'
+import { askStoppedAt } from '../utils/askStoppedAt'
 import { confirmRemove } from '../utils/confirmRemove'
 import { formatDate, localDate } from '../utils/date'
 import { episodesUpTo, isAired, seriesProgress } from '../utils/progress'
@@ -89,6 +90,8 @@ async function onRefresh(event: RefresherCustomEvent) {
 
 const count = (episode: Episode) =>
   watchCount(history.episodeEntry(tmdbId.value, episode))
+const stoppedAt = (episode: Episode) =>
+  history.episodeEntry(tmdbId.value, episode)?.stoppedAt
 
 const progress = computed(() =>
   series.value
@@ -140,16 +143,57 @@ function setEpisodes(episodes: Episode[], watched: boolean) {
   history.setEpisodesWatched(tmdbId.value, episodes, watched)
 }
 
+// "Already watched": ticks every aired regular episode; a finished show becomes completed
+async function markAllWatched() {
+  if (!series.value || !progress.value) return
+  const c = strings.series.allWatchedConfirm
+  const sheet = await actionSheetController.create({
+    header: c.header,
+    subHeader: c.message(progress.value.aired - progress.value.watched),
+    buttons: [
+      { text: c.confirm, role: 'confirm' },
+      { text: c.cancel, role: 'cancel' },
+    ],
+  })
+  await sheet.present()
+  const { role } = await sheet.onDidDismiss()
+  if (role !== 'confirm' || !series.value) return
+  history.markSeriesWatched(tmdbId.value, series.value, today)
+}
+
 function onStatusChange(event: SelectCustomEvent<SeriesStatus>) {
   library.setSeriesStatus(tmdbId.value, event.detail.value)
 }
 
+async function editStoppedAt(episode: Episode) {
+  const minutes = await askStoppedAt(stoppedAt(episode), episode.runtime)
+  if (minutes === null) return
+  history.setEpisodeStoppedAt(tmdbId.value, episode, minutes, episode.runtime)
+}
+
 async function openEpisodeActions(episode: Episode) {
   const current = count(episode)
+  const stopped = stoppedAt(episode)
   const a = strings.episodeActions
+  const p = strings.partial
   const buttons = [
     ...(current === 0
-      ? [{ text: a.markWatched, handler: () => setEpisodes([episode], true) }]
+      ? [
+          { text: a.markWatched, handler: () => setEpisodes([episode], true) },
+          {
+            text: stopped ? p.change : p.set,
+            handler: () => void editStoppedAt(episode),
+          },
+          ...(stopped
+            ? [
+                {
+                  text: p.clear,
+                  handler: () =>
+                    history.setEpisodeStoppedAt(tmdbId.value, episode, null),
+                },
+              ]
+            : []),
+        ]
       : [
           {
             text: a.addRewatch,
@@ -292,6 +336,15 @@ async function onRemove() {
           {{ series.overview }}
         </p>
 
+        <div
+          v-if="progress && progress.watched < progress.aired"
+          class="ion-padding-horizontal"
+        >
+          <ion-button expand="block" fill="outline" @click="markAllWatched">
+            {{ strings.series.allWatched }}
+          </ion-button>
+        </div>
+
         <ion-accordion-group v-model="openSeasons" :multiple="true">
           <ion-accordion
             v-for="season in seasons"
@@ -340,6 +393,7 @@ async function onRemove() {
                   :episode="episode"
                   :count="count(episode)"
                   :aired="isAired(episode, today)"
+                  :stopped-at="stoppedAt(episode)"
                   @toggle="setEpisodes([episode], $event)"
                   @more="openEpisodeActions(episode)"
                 />

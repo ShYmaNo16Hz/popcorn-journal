@@ -46,6 +46,14 @@ export const strings = {
     progress: (watched: number, aired: number) => `${watched} / ${aired}`,
     seasonWatched: 'Mark season watched',
     seasonUnwatched: 'Mark season unwatched',
+    allWatched: 'Already watched all aired episodes',
+    allWatchedConfirm: {
+      header: 'Mark the whole show watched?',
+      message: (count: number) =>
+        `${count} unwatched ${count === 1 ? 'episode' : 'episodes'} will be ticked.`,
+      confirm: 'Mark all watched',
+      cancel: 'Cancel',
+    },
     loadError: "Couldn't load this show. Check your connection.",
     retry: 'Try again',
     episodeLabel: (season: number, episode: number) =>
@@ -61,6 +69,19 @@ export const strings = {
     removeRewatch: 'Remove a rewatch (−1)',
     cancel: 'Cancel',
     rewatches: (count: number) => `×${count}`,
+  },
+  partial: {
+    set: 'Watched partly…',
+    change: 'Change where I stopped',
+    clear: 'Clear progress',
+    inProgress: 'In progress',
+    stoppedAt: (at: string, runtime: string | null) =>
+      runtime ? `Stopped at ${at} of ${runtime}` : `Stopped at ${at}`,
+    promptHeader: 'Where did you stop?',
+    promptRuntime: (runtime: string) => `Runtime: ${runtime}`,
+    placeholder: 'Minutes, e.g. 45 or 1:30',
+    save: 'Save',
+    cancel: 'Cancel',
   },
   movies: {
     empty: 'No movies yet. Find one in Search.',
@@ -137,10 +158,11 @@ export const strings = {
         title: 'Tracking shows',
         items: [
           'Tap the circle next to an episode to tick it. Tap the episode itself for more: watched up to here, watched again (+1), mark unwatched.',
-          '“Mark season watched” ticks every aired episode of a season at once.',
+          '“Mark season watched” ticks every aired episode of a season at once; “Already watched all aired episodes” does it for the whole show (an ended show is then marked Completed).',
           'The Series tab shows “Up next” for every show you’re watching — tick the next episode right from there.',
           'Episodes that haven’t aired yet are dimmed and show their air date. Specials don’t count towards progress.',
           'On a show’s page you can change its status and set how many times you’ve watched it.',
+          'Stopped halfway through an episode? Tap it, choose “Watched partly…” and enter the minute (45 or 1:30). Ticking it later clears the progress.',
         ],
       },
       movies: {
@@ -148,6 +170,7 @@ export const strings = {
         items: [
           '“Mark watched” saves today’s date — tap the date to change it.',
           'Use “Times watched” for rewatches. “Add to watchlist” keeps movies you plan to see.',
+          '“Watched partly…” remembers where you stopped; those movies show under “In progress”.',
         ],
       },
       data: {

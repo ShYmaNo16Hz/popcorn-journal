@@ -26,10 +26,12 @@ export interface Library {
 // `at: null` is a tombstone (unticked) — never delete keys, so sync merges work.
 // `updatedAt` is when the entry last changed; merge picks the newer `updatedAt ?? at`.
 // `count` = times watched (rewatches); absent = 1 when `at` is set, ignored on tombstones.
+// `stoppedAt` = minutes into a partly watched, still unwatched title; cleared once it's ticked.
 export interface HistoryEntry {
   at: string | null // last watched
   updatedAt?: string
   count?: number
+  stoppedAt?: number
 }
 
 export interface History {

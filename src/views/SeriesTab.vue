@@ -21,7 +21,7 @@ import { useLibraryStore } from '../stores/library'
 import { useMetadataStore } from '../stores/metadata'
 import type { Series } from '../types/media'
 import type { LibrarySeriesEntry, SeriesStatus } from '../types/userData'
-import { formatDate, localDate } from '../utils/date'
+import { formatDate, localDate, stoppedAtLabel } from '../utils/date'
 import { seriesProgress } from '../utils/progress'
 import type { SeriesProgress } from '../utils/progress'
 import { strings } from '../utils/strings'
@@ -113,7 +113,13 @@ function upNextSubtitle(row: Row): string {
 
 function upNextNote(row: Row): string {
   const { nextUp, upcoming, watched, aired } = row.progress
-  if (nextUp) return strings.series.progress(watched, aired)
+  if (nextUp) {
+    const counts = strings.series.progress(watched, aired)
+    const stopped = history.episodeEntry(Number(row.id), nextUp)?.stoppedAt
+    return stopped
+      ? `${counts} · ${stoppedAtLabel(stopped, nextUp.runtime)}`
+      : counts
+  }
   if (!upcoming) return ''
   const date = upcoming.airDate
     ? formatDate(upcoming.airDate)
