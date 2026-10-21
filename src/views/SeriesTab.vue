@@ -27,6 +27,7 @@ import {
   localDate,
   stoppedAtLabel,
 } from '../utils/date'
+import { parseEpisodeKey } from '../utils/episodeKey'
 import { seriesProgress } from '../utils/progress'
 import type { SeriesProgress } from '../utils/progress'
 import { strings } from '../utils/strings'
@@ -59,7 +60,7 @@ interface Row {
   series: Series
   progress: SeriesProgress
   lastActivity: string
-  lastWatched: string // latest episode `at`, '' if none
+  lastWatched: { key: string; at: string } | null // most recently watched episode
 }
 
 const today = localDate()
@@ -74,12 +75,14 @@ const rows = computed<Row[]>(() =>
       (episode) => history.isEpisodeWatched(tmdbId, episode),
       today,
     )
-    const episodes = Object.values(history.history.episodes[id] ?? {})
-    const activity = episodes.map((e) => e.updatedAt ?? e.at ?? '')
-    const lastWatched = episodes.reduce(
-      (latest, e) => (e.at && e.at > latest ? e.at : latest),
-      '',
-    )
+    const episodes = Object.entries(history.history.episodes[id] ?? {})
+    const activity = episodes.map(([, e]) => e.updatedAt ?? e.at ?? '')
+    let lastWatched: Row['lastWatched'] = null
+    for (const [key, e] of episodes) {
+      if (e.at && (!lastWatched || e.at > lastWatched.at)) {
+        lastWatched = { key, at: e.at }
+      }
+    }
     const lastActivity = activity.reduce(
       (a, b) => (a > b ? a : b),
       entry.addedAt,
@@ -141,10 +144,16 @@ function groupSubtitle(row: Row): string {
   return `${strings.series.progress(row.progress.watched, row.progress.aired)} · ${status}`
 }
 
-// Completed shows: when their last episode was watched
+// Completed: when the last episode was watched; watching: which one and when
 function groupNote(row: Row): string | undefined {
-  if (row.entry.status !== 'completed' || !row.lastWatched) return undefined
-  return strings.series.finishedOn(formatIsoDate(row.lastWatched))
+  const last = row.lastWatched
+  if (!last) return undefined
+  const date = formatIsoDate(last.at)
+  if (row.entry.status === 'completed') return strings.series.finishedOn(date)
+  const parsed = parseEpisodeKey(last.key)
+  if (row.entry.status !== 'watching' || !parsed) return undefined
+  const episode = strings.series.episodeLabel(parsed.season, parsed.episode)
+  return strings.series.lastWatched(episode, date)
 }
 
 function open(id: string) {
