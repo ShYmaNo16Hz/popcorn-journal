@@ -44,6 +44,7 @@ export const strings = {
     status: 'Status',
     watchedTimes: 'Times watched',
     progress: (watched: number, aired: number) => `${watched} / ${aired}`,
+    finishedOn: (date: string) => `Finished on: ${date}`,
     seasonWatched: 'Mark season watched',
     seasonUnwatched: 'Mark season unwatched',
     allWatched: 'Already watched all aired episodes',

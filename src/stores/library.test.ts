@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useHistoryStore } from './history'
-import { useLibraryStore } from './library'
+import { seriesWatchCount, useLibraryStore } from './library'
 
 // No network or disk in these tests
 vi.mock('../services/cache', () => ({
@@ -14,6 +14,21 @@ vi.mock('../services/cache', () => ({
 
 const SOPRANOS = 1398
 const BEEKEEPER = 866398
+
+describe('series watch count', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('counts an unset completed show as watched once', async () => {
+    const library = useLibraryStore()
+    await library.addSeries(SOPRANOS)
+    const entry = () => library.seriesEntry(SOPRANOS)!
+    expect(seriesWatchCount(entry())).toBe(0)
+    library.setSeriesStatus(SOPRANOS, 'completed')
+    expect(seriesWatchCount(entry())).toBe(1)
+    library.setSeriesWatchCount(SOPRANOS, 0)
+    expect(seriesWatchCount(entry())).toBe(0)
+  })
+})
 
 describe('library removal', () => {
   beforeEach(() => setActivePinia(createPinia()))

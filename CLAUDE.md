@@ -79,7 +79,7 @@ history.json   — watched episodes and watched movies, with timestamps
       "status": "watching",
       "addedAt": "2026-10-18T20:00:00Z",
       "updatedAt": "...",
-      "watchCount": 2, // times the whole show was watched, set by the user; absent = 0
+      "watchCount": 2, // times the whole show was watched, set by the user; absent = 1 if completed, else 0 (seriesWatchCount)
     },
   },
   "movies": {

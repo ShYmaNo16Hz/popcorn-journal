@@ -21,7 +21,12 @@ import { useLibraryStore } from '../stores/library'
 import { useMetadataStore } from '../stores/metadata'
 import type { Series } from '../types/media'
 import type { LibrarySeriesEntry, SeriesStatus } from '../types/userData'
-import { formatDate, localDate, stoppedAtLabel } from '../utils/date'
+import {
+  formatDate,
+  formatIsoDate,
+  localDate,
+  stoppedAtLabel,
+} from '../utils/date'
 import { seriesProgress } from '../utils/progress'
 import type { SeriesProgress } from '../utils/progress'
 import { strings } from '../utils/strings'
@@ -54,6 +59,7 @@ interface Row {
   series: Series
   progress: SeriesProgress
   lastActivity: string
+  lastWatched: string // latest episode `at`, '' if none
 }
 
 const today = localDate()
@@ -68,14 +74,17 @@ const rows = computed<Row[]>(() =>
       (episode) => history.isEpisodeWatched(tmdbId, episode),
       today,
     )
-    const activity = Object.values(history.history.episodes[id] ?? {}).map(
-      (e) => e.updatedAt ?? e.at ?? '',
+    const episodes = Object.values(history.history.episodes[id] ?? {})
+    const activity = episodes.map((e) => e.updatedAt ?? e.at ?? '')
+    const lastWatched = episodes.reduce(
+      (latest, e) => (e.at && e.at > latest ? e.at : latest),
+      '',
     )
     const lastActivity = activity.reduce(
       (a, b) => (a > b ? a : b),
       entry.addedAt,
     )
-    return [{ id, entry, series, progress, lastActivity }]
+    return [{ id, entry, series, progress, lastActivity, lastWatched }]
   }),
 )
 
@@ -130,6 +139,12 @@ function upNextNote(row: Row): string {
 function groupSubtitle(row: Row): string {
   const status = strings.seriesStatus[row.series.status] ?? row.series.status
   return `${strings.series.progress(row.progress.watched, row.progress.aired)} · ${status}`
+}
+
+// Completed shows: when their last episode was watched
+function groupNote(row: Row): string | undefined {
+  if (row.entry.status !== 'completed' || !row.lastWatched) return undefined
+  return strings.series.finishedOn(formatIsoDate(row.lastWatched))
 }
 
 function open(id: string) {
@@ -203,6 +218,7 @@ function markNext(row: Row) {
           :title="row.series.title"
           :poster-path="row.series.posterPath"
           :subtitle="groupSubtitle(row)"
+          :note="groupNote(row)"
           button
           @open="open(row.id)"
         />

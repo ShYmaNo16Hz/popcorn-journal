@@ -13,6 +13,11 @@ import { emptyLibrary } from '../types/userData'
 
 const now = () => new Date().toISOString()
 
+/** Times the whole show was watched; unset counts a completed show as once. */
+export function seriesWatchCount(entry: LibrarySeriesEntry): number {
+  return entry.watchCount ?? (entry.status === 'completed' ? 1 : 0)
+}
+
 // Entries with `removedAt` are tombstones: kept on disk, hidden everywhere else
 function active<E extends LibraryEntry<string>>(
   entries: Record<string, E>,
@@ -114,7 +119,7 @@ export const useLibraryStore = defineStore('library', () => {
   function setSeriesWatchCount(tmdbId: number, count: number): void {
     const entry = seriesEntry(tmdbId)
     const value = Math.max(0, Math.floor(count))
-    if (!entry || (entry.watchCount ?? 0) === value) return
+    if (!entry || seriesWatchCount(entry) === value) return
     entry.watchCount = value
     entry.updatedAt = now()
     save()

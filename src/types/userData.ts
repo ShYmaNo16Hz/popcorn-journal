@@ -14,7 +14,7 @@ export interface LibraryEntry<S> {
 }
 
 export interface LibrarySeriesEntry extends LibraryEntry<SeriesStatus> {
-  watchCount?: number // how many times the whole show was watched, set by the user; absent = 0
+  watchCount?: number // how many times the whole show was watched, set by the user; absent = 1 if completed, else 0
 }
 
 export interface Library {

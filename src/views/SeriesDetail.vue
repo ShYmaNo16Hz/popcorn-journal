@@ -30,7 +30,7 @@ import CountStepper from '../components/CountStepper.vue'
 import EpisodeRow from '../components/EpisodeRow.vue'
 import { imageUrl } from '../services/tmdb'
 import { useHistoryStore, watchCount } from '../stores/history'
-import { useLibraryStore } from '../stores/library'
+import { seriesWatchCount, useLibraryStore } from '../stores/library'
 import { useMetadataStore } from '../stores/metadata'
 import type { Episode, Season } from '../types/media'
 import type { SeriesStatus } from '../types/userData'
@@ -329,7 +329,7 @@ async function onRemove() {
             <ion-label>{{ strings.series.watchedTimes }}</ion-label>
             <CountStepper
               slot="end"
-              :value="entry.watchCount ?? 0"
+              :value="seriesWatchCount(entry)"
               @change="library.setSeriesWatchCount(tmdbId, $event)"
             />
           </ion-item>
